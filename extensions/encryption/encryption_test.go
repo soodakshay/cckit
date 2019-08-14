@@ -5,19 +5,19 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/s7techlab/cckit/extensions/encryption/testdata"
+	"github.com/soodakshay/cckit/extensions/encryption/testdata"
 
 	"github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/s7techlab/cckit/state/mapping"
+	"github.com/soodakshay/cckit/state/mapping"
 
-	"github.com/s7techlab/cckit/examples/payment/schema"
+	"github.com/soodakshay/cckit/examples/payment/schema"
 
-	examplecert "github.com/s7techlab/cckit/examples/cert"
-	"github.com/s7techlab/cckit/examples/payment"
-	"github.com/s7techlab/cckit/extensions/encryption"
-	testcc "github.com/s7techlab/cckit/testing"
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	examplecert "github.com/soodakshay/cckit/examples/cert"
+	"github.com/soodakshay/cckit/examples/payment"
+	"github.com/soodakshay/cckit/extensions/encryption"
+	testcc "github.com/soodakshay/cckit/testing"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

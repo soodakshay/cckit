@@ -4,8 +4,8 @@ import (
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/entities"
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/convert"
-	"github.com/s7techlab/cckit/router"
+	"github.com/soodakshay/cckit/convert"
+	"github.com/soodakshay/cckit/router"
 )
 
 const TransientMapKey = `ENCODE_KEY`

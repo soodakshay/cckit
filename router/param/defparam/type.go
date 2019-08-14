@@ -1,8 +1,8 @@
 package defparam
 
 import (
-	"github.com/s7techlab/cckit/router"
-	"github.com/s7techlab/cckit/router/param"
+	"github.com/soodakshay/cckit/router"
+	"github.com/soodakshay/cckit/router/param"
 )
 
 func Proto(target interface{}, argPoss ...int) router.MiddlewareFunc {

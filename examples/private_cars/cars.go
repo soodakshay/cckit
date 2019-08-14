@@ -4,9 +4,9 @@ package cars
 import (
 	"time"
 
-	"github.com/s7techlab/cckit/extensions/owner"
-	"github.com/s7techlab/cckit/router"
-	p "github.com/s7techlab/cckit/router/param"
+	"github.com/soodakshay/cckit/extensions/owner"
+	"github.com/soodakshay/cckit/router"
+	p "github.com/soodakshay/cckit/router/param"
 )
 
 const CarEntity = `CAR`

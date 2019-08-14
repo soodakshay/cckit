@@ -2,9 +2,9 @@ package debug
 
 import (
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/router"
-	"github.com/s7techlab/cckit/router/param"
-	"github.com/s7techlab/cckit/state"
+	"github.com/soodakshay/cckit/router"
+	"github.com/soodakshay/cckit/router/param"
+	"github.com/soodakshay/cckit/state"
 )
 
 const (

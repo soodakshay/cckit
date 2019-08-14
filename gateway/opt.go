@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/hyperledger/fabric/msp"
-	"github.com/s7techlab/cckit/extensions/encryption"
+	"github.com/soodakshay/cckit/extensions/encryption"
 
 	"github.com/hyperledger/fabric/protos/peer"
-	"github.com/s7techlab/cckit/gateway/service"
+	"github.com/soodakshay/cckit/gateway/service"
 )
 
 type Opt func(*chaincode)

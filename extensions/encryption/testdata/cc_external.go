@@ -1,12 +1,12 @@
 package testdata
 
 import (
-	"github.com/s7techlab/cckit/examples/payment"
-	"github.com/s7techlab/cckit/examples/payment/schema"
+	"github.com/soodakshay/cckit/examples/payment"
+	"github.com/soodakshay/cckit/examples/payment/schema"
 
-	"github.com/s7techlab/cckit/extensions/encryption"
-	"github.com/s7techlab/cckit/router"
-	"github.com/s7techlab/cckit/router/param"
+	"github.com/soodakshay/cckit/extensions/encryption"
+	"github.com/soodakshay/cckit/router"
+	"github.com/soodakshay/cckit/router/param"
 )
 
 // Test interaction with external encrypted chaincode (payments)

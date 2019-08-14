@@ -12,13 +12,13 @@ import (
 	"github.com/hyperledger/fabric/protos/peer"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/s7techlab/cckit/examples/cpaper_asservice"
-	"github.com/s7techlab/cckit/examples/cpaper_asservice/schema"
-	s "github.com/s7techlab/cckit/examples/cpaper_asservice/service"
-	"github.com/s7techlab/cckit/extensions/encryption"
-	"github.com/s7techlab/cckit/router"
-	testcc "github.com/s7techlab/cckit/testing"
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	"github.com/soodakshay/cckit/examples/cpaper_asservice"
+	"github.com/soodakshay/cckit/examples/cpaper_asservice/schema"
+	s "github.com/soodakshay/cckit/examples/cpaper_asservice/service"
+	"github.com/soodakshay/cckit/extensions/encryption"
+	"github.com/soodakshay/cckit/router"
+	testcc "github.com/soodakshay/cckit/testing"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 )
 
 const (

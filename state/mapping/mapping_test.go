@@ -8,14 +8,14 @@ import (
 	"github.com/hyperledger/fabric/protos/peer"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	examplecert "github.com/s7techlab/cckit/examples/cert"
-	"github.com/s7techlab/cckit/state"
-	"github.com/s7techlab/cckit/state/mapping"
-	"github.com/s7techlab/cckit/state/mapping/testdata"
-	"github.com/s7techlab/cckit/state/mapping/testdata/schema"
-	state_schema "github.com/s7techlab/cckit/state/schema"
-	testcc "github.com/s7techlab/cckit/testing"
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	examplecert "github.com/soodakshay/cckit/examples/cert"
+	"github.com/soodakshay/cckit/state"
+	"github.com/soodakshay/cckit/state/mapping"
+	"github.com/soodakshay/cckit/state/mapping/testdata"
+	"github.com/soodakshay/cckit/state/mapping/testdata/schema"
+	state_schema "github.com/soodakshay/cckit/state/schema"
+	testcc "github.com/soodakshay/cckit/testing"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 )
 
 func TestState(t *testing.T) {

@@ -14,12 +14,12 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	errors "github.com/pkg/errors"
-	"github.com/s7techlab/cckit/examples/cpaper_asservice/schema"
-	cckit_gateway "github.com/s7techlab/cckit/gateway"
-	cckit_ccservice "github.com/s7techlab/cckit/gateway/service"
-	cckit_router "github.com/s7techlab/cckit/router"
-	cckit_param "github.com/s7techlab/cckit/router/param"
-	cckit_defparam "github.com/s7techlab/cckit/router/param/defparam"
+	"github.com/soodakshay/cckit/examples/cpaper_asservice/schema"
+	cckit_gateway "github.com/soodakshay/cckit/gateway"
+	cckit_ccservice "github.com/soodakshay/cckit/gateway/service"
+	cckit_router "github.com/soodakshay/cckit/router"
+	cckit_param "github.com/soodakshay/cckit/router/param"
+	cckit_defparam "github.com/soodakshay/cckit/router/param/defparam"
 )
 
 type ValidatorInterface interface {

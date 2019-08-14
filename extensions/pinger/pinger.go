@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/lib/cid"
-	"github.com/s7techlab/cckit/identity"
-	r "github.com/s7techlab/cckit/router"
+	"github.com/soodakshay/cckit/identity"
+	r "github.com/soodakshay/cckit/router"
 )
 
 const (

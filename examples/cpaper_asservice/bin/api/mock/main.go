@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/s7techlab/cckit/examples/cpaper_asservice"
-	cpaperservice "github.com/s7techlab/cckit/examples/cpaper_asservice/service"
-	"github.com/s7techlab/cckit/gateway"
-	"github.com/s7techlab/cckit/gateway/service"
-	"github.com/s7techlab/cckit/testing"
+	"github.com/soodakshay/cckit/examples/cpaper_asservice"
+	cpaperservice "github.com/soodakshay/cckit/examples/cpaper_asservice/service"
+	"github.com/soodakshay/cckit/gateway"
+	"github.com/soodakshay/cckit/gateway/service"
+	"github.com/soodakshay/cckit/testing"
 	"google.golang.org/grpc"
 )
 

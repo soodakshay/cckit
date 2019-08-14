@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/s7techlab/cckit/state"
-	"github.com/s7techlab/cckit/state/testdata/schema"
+	"github.com/soodakshay/cckit/state"
+	"github.com/soodakshay/cckit/state/testdata/schema"
 
-	"github.com/s7techlab/cckit/state/testdata"
+	"github.com/soodakshay/cckit/state/testdata"
 
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

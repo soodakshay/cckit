@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/convert"
-	"github.com/s7techlab/cckit/router"
+	"github.com/soodakshay/cckit/convert"
+	"github.com/soodakshay/cckit/router"
 )
 
 const LastPosKey = `_lastPos`

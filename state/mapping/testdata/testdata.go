@@ -1,6 +1,6 @@
 package testdata
 
-import "github.com/s7techlab/cckit/state/mapping/testdata/schema"
+import "github.com/soodakshay/cckit/state/mapping/testdata/schema"
 
 var (
 	ProtoIssueMocks = []schema.IssueProtoEntity{{
