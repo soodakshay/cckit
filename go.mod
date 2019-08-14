@@ -20,7 +20,6 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/s7techlab/hlf-sdk-go v0.1.3
 	github.com/spf13/viper v1.4.0 // indirect
-	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
 	google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19
 	google.golang.org/grpc v1.21.0
 )

@@ -23,7 +23,7 @@ type (
 	StubHandlerFunc func(shim.ChaincodeStubInterface) peer.Response
 
 	// HandlerFunc returns result as interface and error, this is converted to peer.Response via response.Create
-	HandlerFunc func(Context) (interface{}, error)
+	HandlerFunc func(Context) peer.Response
 
 	// ContextMiddlewareFunc middleware for ContextHandlerFun
 	ContextMiddlewareFunc func(nextOrPrev ContextHandlerFunc, pos ...int) ContextHandlerFunc
@@ -121,7 +121,7 @@ func (g *Group) handleContext(c Context) peer.Response {
 	} else if handlerMeta, ok := g.handlers[c.Path()]; ok {
 
 		g.logger.Debug(`router handler: `, c.Path())
-		h := func(c Context) (interface{}, error) {
+		h := func(c Context) peer.Response {
 
 			c.SetHandler(handlerMeta)
 			h := handlerMeta.Hdl
@@ -135,7 +135,7 @@ func (g *Group) handleContext(c Context) peer.Response {
 
 			return h(c)
 		}
-		resp := response.Create(h(c))
+		resp := h(c)
 		if resp.Status != shim.OK {
 			g.logger.Errorf(`%s: %s: %s`, ErrHandlerError, c.Path(), resp.Message)
 		}
@@ -201,7 +201,7 @@ func (g *Group) Invoke(path string, handler HandlerFunc, middleware ...Middlewar
 func (g *Group) addHandler(t MethodType, path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Group {
 	g.handlers[g.prefix+path] = &HandlerMeta{
 		Type: t,
-		Hdl: func(context Context) (interface{}, error) {
+		Hdl: func(context Context) peer.Response {
 			h := handler
 			for i := len(middleware) - 1; i >= 0; i-- {
 				h = middleware[i](h, i)
