@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/examples/cpaper/schema"
-	"github.com/s7techlab/cckit/router"
+	"github.com/soodakshay/cckit/examples/cpaper/schema"
+	"github.com/soodakshay/cckit/router"
 )
 
 func cpaperList(c router.Context) (interface{}, error) {

@@ -1,12 +1,12 @@
 package cpaper
 
 import (
-	"github.com/s7techlab/cckit/examples/cpaper/schema"
-	"github.com/s7techlab/cckit/extensions/debug"
-	"github.com/s7techlab/cckit/extensions/owner"
-	"github.com/s7techlab/cckit/router"
-	"github.com/s7techlab/cckit/router/param/defparam"
-	m "github.com/s7techlab/cckit/state/mapping"
+	"github.com/soodakshay/cckit/examples/cpaper/schema"
+	"github.com/soodakshay/cckit/extensions/debug"
+	"github.com/soodakshay/cckit/extensions/owner"
+	"github.com/soodakshay/cckit/router"
+	"github.com/soodakshay/cckit/router/param/defparam"
+	m "github.com/soodakshay/cckit/state/mapping"
 )
 
 var (

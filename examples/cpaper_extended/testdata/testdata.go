@@ -3,10 +3,10 @@ package testdata
 import (
 	"time"
 
-	"github.com/s7techlab/cckit/testing"
+	"github.com/soodakshay/cckit/testing"
 
 	"github.com/golang/protobuf/ptypes"
-	"github.com/s7techlab/cckit/examples/cpaper_extended/schema"
+	"github.com/soodakshay/cckit/examples/cpaper_extended/schema"
 )
 
 var (

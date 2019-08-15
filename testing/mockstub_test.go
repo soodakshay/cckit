@@ -8,9 +8,9 @@ import (
 
 	"github.com/s7techlab/hlf-sdk-go/api"
 
-	"github.com/s7techlab/cckit/examples/cars"
-	examplecert "github.com/s7techlab/cckit/examples/cert"
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	"github.com/soodakshay/cckit/examples/cars"
+	examplecert "github.com/soodakshay/cckit/examples/cert"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

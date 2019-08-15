@@ -1,8 +1,8 @@
 # Hyperledger Fabric chaincode kit (CCKit)
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/s7techlab/cckit)](https://goreportcard.com/report/github.com/s7techlab/cckit)
-![Build](https://api.travis-ci.org/s7techlab/cckit.svg?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/s7techlab/cckit/badge.svg?branch=master)](https://coveralls.io/github/s7techlab/cckit?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/soodakshay/cckit)](https://goreportcard.com/report/github.com/soodakshay/cckit)
+![Build](https://api.travis-ci.org/soodakshay/cckit.svg?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/soodakshay/cckit/badge.svg?branch=master)](https://coveralls.io/github/soodakshay/cckit?branch=master)
 
 **CCKit** is a **programming toolkit** for developing and testing hyperledger fabric golang chaincodes.  It enhances
  the development experience while providing developers components for creating more readable and secure 
@@ -52,13 +52,13 @@ CCKit requires Go 1.11+ with modules support
 
 ### Standalone
  
-`git clone git@github.com:s7techlab/cckit.git`
+`git clone git@github.com:soodakshay/cckit.git`
 
 `go mod vendor`
 
 ### As dependency
 
-`go get -u github.com/s7techlab/cckit`
+`go get -u github.com/soodakshay/cckit`
 
 
 ## Example based on CCKit
@@ -77,9 +77,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/s7techlab/cckit/extensions/owner"
-	"github.com/s7techlab/cckit/router"
-	p "github.com/s7techlab/cckit/router/param"
+	"github.com/soodakshay/cckit/extensions/owner"
+	"github.com/soodakshay/cckit/router"
+	p "github.com/soodakshay/cckit/router/param"
 )
 
 var (
@@ -183,10 +183,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	examplecert "github.com/s7techlab/cckit/examples/cert"
-	"github.com/s7techlab/cckit/extensions/owner"
-	testcc "github.com/s7techlab/cckit/testing"
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	examplecert "github.com/soodakshay/cckit/examples/cert"
+	"github.com/soodakshay/cckit/extensions/owner"
+	testcc "github.com/soodakshay/cckit/testing"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 )
 
 func TestCars(t *testing.T) {

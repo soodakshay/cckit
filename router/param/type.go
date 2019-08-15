@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/convert"
-	"github.com/s7techlab/cckit/router"
+	"github.com/soodakshay/cckit/convert"
+	"github.com/soodakshay/cckit/router"
 )
 
 var (
@@ -52,8 +53,11 @@ func Proto(name string, target interface{}, argPoss ...int) router.MiddlewareFun
 
 func TypeErrorMiddleware(name string, err error) router.MiddlewareFunc {
 	return func(next router.HandlerFunc, pos ...int) router.HandlerFunc {
-		return func(c router.Context) (interface{}, error) {
-			return nil, fmt.Errorf(`%s: %s`, err, name)
+		return func(c router.Context) peer.Response {
+			return peer.Response{
+				Status: 500,
+				Message: fmt.Sprintf(`%s: %s`, err, name)
+			}
 		}
 	}
 }

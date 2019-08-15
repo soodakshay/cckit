@@ -1,8 +1,8 @@
 package mapping
 
 import (
-	"github.com/s7techlab/cckit/state"
-	"github.com/s7techlab/cckit/state/schema"
+	"github.com/soodakshay/cckit/state"
+	"github.com/soodakshay/cckit/state/schema"
 )
 
 const KeyRefNamespace = `_idx`

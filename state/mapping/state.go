@@ -3,11 +3,11 @@ package mapping
 import (
 	"fmt"
 
-	"github.com/s7techlab/cckit/state/schema"
+	"github.com/soodakshay/cckit/state/schema"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/state"
+	"github.com/soodakshay/cckit/state"
 )
 
 type (

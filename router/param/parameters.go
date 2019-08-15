@@ -3,8 +3,9 @@ package param
 import (
 	"fmt"
 
-	"github.com/s7techlab/cckit/convert"
-	"github.com/s7techlab/cckit/router"
+	"github.com/hyperledger/fabric/protos/peer"
+	"github.com/soodakshay/cckit/convert"
+	"github.com/soodakshay/cckit/router"
 )
 
 const LastPosKey = `_lastPos`
@@ -69,7 +70,7 @@ func Param(name string, paramType interface{}, argPoss ...int) router.Middleware
 	parameter := Parameter{name, paramType, argPos}
 
 	return func(next router.HandlerFunc, pos ...int) router.HandlerFunc {
-		return func(c router.Context) (interface{}, error) {
+		return func(c router.Context) peer.Response {
 
 			arg, err := parameter.ValueFromContext(c)
 			if err != nil {

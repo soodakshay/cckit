@@ -3,7 +3,7 @@ package router
 import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
-	"github.com/s7techlab/cckit/response"
+	"github.com/soodakshay/cckit/response"
 )
 
 // Response chaincode interface

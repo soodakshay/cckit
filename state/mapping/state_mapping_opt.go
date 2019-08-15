@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/s7techlab/cckit/state"
+	"github.com/soodakshay/cckit/state"
 )
 
 // StateNamespace sets namespace for mapping

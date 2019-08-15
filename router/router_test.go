@@ -7,11 +7,11 @@ import (
 
 	"github.com/hyperledger/fabric/protos/peer"
 
-	testcc "github.com/s7techlab/cckit/testing"
+	testcc "github.com/soodakshay/cckit/testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/s7techlab/cckit/router"
+	"github.com/soodakshay/cckit/router"
 )
 
 func TestRouter(t *testing.T) {

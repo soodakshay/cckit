@@ -9,7 +9,7 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/response"
+	"github.com/soodakshay/cckit/response"
 )
 
 const InitFunc = `init`
@@ -39,7 +39,7 @@ type (
 	StubHandlerFunc func(shim.ChaincodeStubInterface) peer.Response
 
 	// HandlerFunc returns result as interface and error, this is converted to peer.Response via response.Create
-	HandlerFunc func(Context) (interface{}, error)
+	HandlerFunc func(Context) (interface{}, peer.Response)
 
 	// ContextMiddlewareFunc middleware for ContextHandlerFun
 	ContextMiddlewareFunc func(ContextHandlerFunc, ...int) ContextHandlerFunc

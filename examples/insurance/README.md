@@ -72,7 +72,7 @@ The tests are located in [current](.) directory:
 
 Before you begin, be sure to get `CCkit`:
 
-`git clone git@github.com:s7techlab/cckit.git`
+`git clone git@github.com:soodakshay/cckit.git`
 
 and get dependencies using `dep` command:
 
@@ -103,11 +103,11 @@ package main
 import (
 	"fmt"
 	"testing"
-	"github.com/s7techlab/cckit/examples/insurance/app"
+	"github.com/soodakshay/cckit/examples/insurance/app"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	testcc "github.com/s7techlab/cckit/testing"
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	testcc "github.com/soodakshay/cckit/testing"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 )
 
 func TestInsuranceApp(t *testing.T) {

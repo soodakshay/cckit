@@ -370,13 +370,13 @@ import (
 	"fmt"
 	
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/examples/cpaper/schema"
-	"github.com/s7techlab/cckit/extensions/debug"
-	"github.com/s7techlab/cckit/extensions/encryption"
-	"github.com/s7techlab/cckit/extensions/owner"
-	"github.com/s7techlab/cckit/router"
-	"github.com/s7techlab/cckit/router/param/defparam"
-	m "github.com/s7techlab/cckit/state/mapping"
+	"github.com/soodakshay/cckit/examples/cpaper/schema"
+	"github.com/soodakshay/cckit/extensions/debug"
+	"github.com/soodakshay/cckit/extensions/encryption"
+	"github.com/soodakshay/cckit/extensions/owner"
+	"github.com/soodakshay/cckit/router"
+	"github.com/soodakshay/cckit/router/param/defparam"
+	m "github.com/soodakshay/cckit/state/mapping"
 )
 
 
@@ -516,16 +516,16 @@ import (
 	"github.com/golang/protobuf/ptypes"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/s7techlab/cckit/examples/cpaper/schema"
-	"github.com/s7techlab/cckit/examples/cpaper/testdata"
-	"github.com/s7techlab/cckit/state"
+	"github.com/soodakshay/cckit/examples/cpaper/schema"
+	"github.com/soodakshay/cckit/examples/cpaper/testdata"
+	"github.com/soodakshay/cckit/state"
 
-	"github.com/s7techlab/cckit/examples/cpaper"
+	"github.com/soodakshay/cckit/examples/cpaper"
 
-	examplecert "github.com/s7techlab/cckit/examples/cert"
-	"github.com/s7techlab/cckit/identity"
-	testcc "github.com/s7techlab/cckit/testing"
-	expectcc "github.com/s7techlab/cckit/testing/expect"
+	examplecert "github.com/soodakshay/cckit/examples/cert"
+	"github.com/soodakshay/cckit/identity"
+	testcc "github.com/soodakshay/cckit/testing"
+	expectcc "github.com/soodakshay/cckit/testing/expect"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

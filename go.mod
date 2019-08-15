@@ -1,4 +1,4 @@
-module github.com/s7techlab/cckit
+module github.com/soodakshay/cckit
 
 go 1.12
 

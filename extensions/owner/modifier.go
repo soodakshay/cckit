@@ -1,8 +1,9 @@
 package owner
 
 import (
+	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
-	"github.com/s7techlab/cckit/router"
+	"github.com/soodakshay/cckit/router"
 )
 
 var (
@@ -12,7 +13,7 @@ var (
 
 // Only allow access from chain code owner
 func Only(next router.HandlerFunc, pos ...int) router.HandlerFunc {
-	return func(c router.Context) (interface{}, error) {
+	return func(c router.Context) peer.Response {
 		invokerIsOwner, err := IsInvoker(c)
 		if invokerIsOwner && err == nil {
 			return next(c)
