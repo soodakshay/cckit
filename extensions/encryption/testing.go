@@ -14,7 +14,7 @@ func MockInvoke(cc *testing.MockStub, encKey []byte, args ...interface{}) peer.R
 	if err != nil {
 		return response.Error(`unable to encrypt input args`)
 	}
-	return cc.WithTransient(TransientMapWithKey(encKey)).InvokeBytes(encArgs...)
+	return cc.AddTransient(TransientMapWithKey(encKey)).InvokeBytes(encArgs...)
 }
 
 // MockQuery helper for querying MockStub with transient key and encrypted args
@@ -23,7 +23,7 @@ func MockQuery(cc *testing.MockStub, encKey []byte, args ...interface{}) peer.Re
 	if err != nil {
 		return response.Error(`unable to encrypt input args`)
 	}
-	return cc.WithTransient(TransientMapWithKey(encKey)).QueryBytes(encArgs...)
+	return cc.AddTransient(TransientMapWithKey(encKey)).QueryBytes(encArgs...)
 }
 
 // MockStub wrapper for querying and invoking encrypted chaincode
@@ -49,13 +49,14 @@ func (s *MockStub) Invoke(args ...interface{}) (response peer.Response) {
 	// first we encrypt all args
 	response = MockInvoke(s.MockStub, s.EncKey, args...)
 
-	//after receiving response we can decrypt received peer responce
+	//after receiving response we can decrypt received peer response
 	// actual only for invoke, query responses are not encrypted
 	if s.DecryptInvokeResponse && len(response.Payload) > 0 && string(response.Payload) != `null` {
 		if decrypted, err = Decrypt(s.EncKey, response.Payload); err != nil {
-			panic(fmt.Sprintf(`decrypt mock invoke error with payload %s (%d): %s`, string(response.Payload), len(response.Payload), err))
+			panic(fmt.Sprintf(
+				`decrypt mock invoke error with payload %s (%d): %s`,
+				string(response.Payload), len(response.Payload), err))
 		}
-
 		response.Payload = decrypted
 	}
 
@@ -64,6 +65,14 @@ func (s *MockStub) Invoke(args ...interface{}) (response peer.Response) {
 
 func (s *MockStub) Query(args ...interface{}) peer.Response {
 	return MockQuery(s.MockStub, s.EncKey, args...)
+}
+
+func (s *MockStub) Init(args ...interface{}) peer.Response {
+	encArgs, err := EncryptArgs(s.EncKey, args...)
+	if err != nil {
+		return response.Error(`unable to encrypt input args`)
+	}
+	return s.MockStub.AddTransient(TransientMapWithKey(s.EncKey)).InitBytes(encArgs...)
 }
 
 func (s *MockStub) From(args ...interface{}) *MockStub {
@@ -84,6 +93,7 @@ func MustEncryptEvent(encKey []byte, event *peer.ChaincodeEvent) (encrypted *pee
 
 // MustDecryptEvent helper for DecryptEvent. Panics in case of error.
 func MustDecryptEvent(encKey []byte, event *peer.ChaincodeEvent) (decrypted *peer.ChaincodeEvent) {
+
 	var (
 		err error
 	)

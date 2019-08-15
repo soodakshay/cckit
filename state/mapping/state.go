@@ -3,11 +3,18 @@ package mapping
 import (
 	"fmt"
 
+<<<<<<< HEAD
 	"github.com/soodakshay/cckit/state/schema"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 	"github.com/soodakshay/cckit/state"
+=======
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/pkg/errors"
+	"github.com/soodakshay/cckit/state"
+	"github.com/soodakshay/cckit/state/schema"
+>>>>>>> d9270d9c7e0def8422d5975be671d71af6c232c9
 )
 
 type (
@@ -24,20 +31,20 @@ type (
 		//GetByKey(schema interface{}, key string, keyValue []interface{}) (result interface{}, err error)
 	}
 
-	StateImpl struct {
+	Impl struct {
 		state    state.State
 		mappings StateMappings
 	}
 )
 
-func WrapState(s state.State, mappings StateMappings) *StateImpl {
-	return &StateImpl{
+func WrapState(s state.State, mappings StateMappings) *Impl {
+	return &Impl{
 		state:    s,
 		mappings: mappings,
 	}
 }
 
-func (s *StateImpl) MappingNamespace(schema interface{}) (state.Key, error) {
+func (s *Impl) MappingNamespace(schema interface{}) (state.Key, error) {
 	m, err := s.mappings.Get(schema)
 	if err != nil {
 		return nil, err
@@ -46,7 +53,7 @@ func (s *StateImpl) MappingNamespace(schema interface{}) (state.Key, error) {
 	return m.Namespace(), nil
 }
 
-func (s *StateImpl) Get(entry interface{}, target ...interface{}) (result interface{}, err error) {
+func (s *Impl) Get(entry interface{}, target ...interface{}) (interface{}, error) {
 	mapped, err := s.mappings.Map(entry)
 	if err != nil { // mapping is not exists
 		return s.state.Get(entry, target...) // return as is
@@ -55,15 +62,20 @@ func (s *StateImpl) Get(entry interface{}, target ...interface{}) (result interf
 	return s.state.Get(mapped, target...)
 }
 
-func (s *StateImpl) GetInt(key interface{}, defaultValue int) (result int, err error) {
-	return s.state.GetInt(key, defaultValue)
+func (s *Impl) GetInt(entry interface{}, defaultValue int) (int, error) {
+	return s.state.GetInt(entry, defaultValue)
 }
 
-func (s *StateImpl) GetHistory(key interface{}, target interface{}) (result state.HistoryEntryList, err error) {
-	return s.state.GetHistory(key, target)
+func (s *Impl) GetHistory(entry interface{}, target interface{}) (state.HistoryEntryList, error) {
+	mapped, err := s.mappings.Map(entry)
+	if err != nil { // mapping is not exists
+		return s.state.GetHistory(entry, target) // return as is
+	}
+
+	return s.state.GetHistory(mapped, target)
 }
 
-func (s *StateImpl) Exists(entry interface{}) (exists bool, err error) {
+func (s *Impl) Exists(entry interface{}) (bool, error) {
 	mapped, err := s.mappings.Map(entry)
 	if err != nil { // mapping is not exists
 		return s.state.Exists(entry) // return as is
@@ -72,7 +84,7 @@ func (s *StateImpl) Exists(entry interface{}) (exists bool, err error) {
 	return s.state.Exists(mapped)
 }
 
-func (s *StateImpl) Put(entry interface{}, value ...interface{}) (err error) {
+func (s *Impl) Put(entry interface{}, value ...interface{}) error {
 	mapped, err := s.mappings.Map(entry)
 	if err != nil { // mapping is not exists
 		return s.state.Put(entry, value...) // return as is
@@ -80,7 +92,7 @@ func (s *StateImpl) Put(entry interface{}, value ...interface{}) (err error) {
 
 	keyRefs, err := mapped.Keys() // additional keys
 	if err != nil {
-		return
+		return err
 	}
 
 	// delete previous key refs if key exists
@@ -95,7 +107,7 @@ func (s *StateImpl) Put(entry interface{}, value ...interface{}) (err error) {
 	return s.state.Put(mapped)
 }
 
-func (s *StateImpl) Insert(entry interface{}, value ...interface{}) (err error) {
+func (s *Impl) Insert(entry interface{}, value ...interface{}) error {
 	mapped, err := s.mappings.Map(entry)
 	if err != nil { // mapping is not exists
 		return s.state.Insert(entry, value...) // return as is
@@ -103,7 +115,7 @@ func (s *StateImpl) Insert(entry interface{}, value ...interface{}) (err error) 
 
 	keyRefs, err := mapped.Keys() // additional keys
 	if err != nil {
-		return
+		return err
 	}
 
 	// insert uniq key refs. if key already exists - error returned
@@ -116,30 +128,23 @@ func (s *StateImpl) Insert(entry interface{}, value ...interface{}) (err error) 
 	return s.state.Insert(mapped)
 }
 
-func (s *StateImpl) List(namespace interface{}, target ...interface{}) (result interface{}, err error) {
-	if s.mappings.Exists(namespace) {
-		m, err := s.mappings.Get(namespace)
-		if err != nil {
-			return nil, errors.Wrap(err, `mapping`)
-		}
-
-		namespace = m.Namespace()
-		s.Logger().Debugf(`state mapped LIST with namespace: %s`, namespace)
-		target = targetFromMapping(m)
+func (s *Impl) List(entry interface{}, target ...interface{}) (interface{}, error) {
+	if !s.mappings.Exists(entry) {
+		return s.state.List(entry, target...)
 	}
 
-	return s.state.List(namespace, target...)
-}
-
-func targetFromMapping(m StateMapper) (target []interface{}) {
-	target = []interface{}{m.Schema()}
-	if list := m.List(); list != nil {
-		target = append(target, list)
+	m, err := s.mappings.Get(entry)
+	if err != nil {
+		return nil, errors.Wrap(err, `mapping`)
 	}
-	return
+
+	namespace := m.Namespace()
+	s.Logger().Debugf(`state mapped LIST with namespace: %s`, namespace)
+
+	return s.state.List(namespace, m.Schema(), m.List())
 }
 
-func (s *StateImpl) ListWith(entry interface{}, key state.Key) (result interface{}, err error) {
+func (s *Impl) ListWith(entry interface{}, key state.Key) (result interface{}, err error) {
 	if !s.mappings.Exists(entry) {
 		return nil, ErrStateMappingNotFound
 	}
@@ -151,24 +156,25 @@ func (s *StateImpl) ListWith(entry interface{}, key state.Key) (result interface
 	namespace := m.Namespace()
 	s.Logger().Debugf(`state mapped LIST with namespace: %s`, namespace, namespace.Append(key))
 
-	return s.state.List(namespace.Append(key), targetFromMapping(m)...)
+	return s.state.List(namespace.Append(key), m.Schema(), m.List())
 }
 
-func (s *StateImpl) GetByUniqKey(entry interface{}, idx string, idxVal []string, target ...interface{}) (result interface{}, err error) {
+func (s *Impl) GetByUniqKey(
+	entry interface{}, idx string, idxVal []string, target ...interface{}) (result interface{}, err error) {
+
 	if !s.mappings.Exists(entry) {
 		return nil, ErrStateMappingNotFound
 	}
 
-	keyRef, err := s.state.Get(NewKeyRefIdMapped(entry, idx, idxVal), &schema.KeyRef{})
+	keyRef, err := s.state.Get(NewKeyRefIDMapped(entry, idx, idxVal), &schema.KeyRef{})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf(`uniq index: {%s}.%s`, mapKey(entry), idx))
 	}
 
 	return s.state.Get(keyRef.(*schema.KeyRef).PKey, target...)
 }
 
-func (s *StateImpl) Delete(entry interface{}) (err error) {
-
+func (s *Impl) Delete(entry interface{}) (err error) {
 	mapped, err := s.mappings.Map(entry)
 	if err != nil { // mapping is not exists
 		return s.state.Delete(entry) // return as is
@@ -177,18 +183,104 @@ func (s *StateImpl) Delete(entry interface{}) (err error) {
 	return s.state.Delete(mapped)
 }
 
-func (s *StateImpl) Logger() *shim.ChaincodeLogger {
+func (s *Impl) Logger() *shim.ChaincodeLogger {
 	return s.state.Logger()
 }
 
-func (s *StateImpl) UseKeyTransformer(kt state.KeyTransformer) state.State {
+func (s *Impl) UseKeyTransformer(kt state.KeyTransformer) state.State {
 	return s.state.UseKeyTransformer(kt)
 }
 
-func (s *StateImpl) UseStateGetTransformer(fb state.FromBytesTransformer) state.State {
+func (s *Impl) UseStateGetTransformer(fb state.FromBytesTransformer) state.State {
 	return s.state.UseStateGetTransformer(fb)
 }
 
-func (s *StateImpl) UseStatePutTransformer(tb state.ToBytesTransformer) state.State {
+func (s *Impl) UseStatePutTransformer(tb state.ToBytesTransformer) state.State {
 	return s.state.UseStatePutTransformer(tb)
+}
+
+func (s *Impl) GetPrivate(collection string, entry interface{}, target ...interface{}) (result interface{}, err error) {
+	mapped, err := s.mappings.Map(entry)
+	if err != nil { // mapping is not exists
+		return s.state.GetPrivate(collection, entry, target...) // return as is
+	}
+
+	return s.state.GetPrivate(collection, mapped, target...)
+}
+
+func (s *Impl) DeletePrivate(collection string, entry interface{}) (err error) {
+
+	mapped, err := s.mappings.Map(entry)
+	if err != nil { // mapping is not exists
+		return s.state.DeletePrivate(collection, entry) // return as is
+	}
+
+	return s.state.DeletePrivate(collection, mapped)
+}
+
+func (s *Impl) ListPrivate(collection string, usePrivateDataIterator bool, namespace interface{}, target ...interface{}) (result interface{}, err error) {
+	if !s.mappings.Exists(namespace) {
+		return s.state.ListPrivate(collection, usePrivateDataIterator, namespace, target...)
+	}
+	m, err := s.mappings.Get(namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, `mapping`)
+	}
+
+	namespace = m.Namespace()
+	s.Logger().Debugf(`private state mapped LIST with namespace: %s`, namespace)
+	return s.state.ListPrivate(collection, usePrivateDataIterator, namespace, target[0], m.List())
+}
+
+func (s *Impl) InsertPrivate(collection string, entry interface{}, value ...interface{}) (err error) {
+	mapped, err := s.mappings.Map(entry)
+	if err != nil { // mapping is not exists
+		return s.state.InsertPrivate(collection, entry, value...) // return as is
+	}
+
+	keyRefs, err := mapped.Keys() // additional keys
+	if err != nil {
+		return
+	}
+
+	// insert uniq key refs. if key already exists - error returned
+	for _, kr := range keyRefs {
+		if err = s.state.InsertPrivate(collection, kr); err != nil {
+			return fmt.Errorf(`%s: %s`, ErrMappingUniqKeyExists, err)
+		}
+	}
+
+	return s.state.InsertPrivate(collection, mapped)
+}
+
+func (s *Impl) PutPrivate(collection string, entry interface{}, value ...interface{}) (err error) {
+	mapped, err := s.mappings.Map(entry)
+	if err != nil { // mapping is not exists
+		return s.state.PutPrivate(collection, entry, value...) // return as is
+	}
+
+	keyRefs, err := mapped.Keys() // additional keys
+	if err != nil {
+		return
+	}
+
+	// delete previous key refs if key exists
+
+	// put uniq key refs. if key already exists - error returned
+	for _, kr := range keyRefs {
+		if err = s.state.PutPrivate(collection, kr); err != nil {
+			return fmt.Errorf(`%s: %s`, ErrMappingUniqKeyExists, err)
+		}
+	}
+
+	return s.state.PutPrivate(collection, mapped)
+}
+
+func (s *Impl) ExistsPrivate(collection string, entry interface{}) (exists bool, err error) {
+	mapped, err := s.mappings.Map(entry)
+	if err != nil { // mapping is not exists
+		return s.state.ExistsPrivate(collection, entry) // return as is
+	}
+
+	return s.state.ExistsPrivate(collection, mapped)
 }

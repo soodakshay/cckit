@@ -33,7 +33,9 @@ func NewStateList(config ...interface{}) (sl *StateList, err error) {
 	return &StateList{itemTarget: itemTarget, listTarget: listTarget}, nil
 }
 
-func (sl *StateList) Fill(iter shim.StateQueryIteratorInterface, fromBytes FromBytesTransformer) (list interface{}, err error) {
+func (sl *StateList) Fill(
+	iter shim.StateQueryIteratorInterface, fromBytes FromBytesTransformer) (list interface{}, err error) {
+
 	for iter.HasNext() {
 		kv, err := iter.Next()
 		if err != nil {
@@ -75,4 +77,8 @@ func (sl *StateList) Get() (list interface{}, err error) {
 	}
 
 	return sl.list, nil
+}
+
+func (sl *StateList) AddElementToList(elem interface{}) {
+	sl.list = append(sl.list, elem)
 }

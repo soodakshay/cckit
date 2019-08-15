@@ -1,8 +1,12 @@
-package cars
+package cars_test
 
 import (
 	"testing"
 
+<<<<<<< HEAD
+=======
+	"github.com/soodakshay/cckit/examples/cars"
+>>>>>>> d9270d9c7e0def8422d5975be671d71af6c232c9
 	examplecert "github.com/soodakshay/cckit/examples/cert"
 	"github.com/soodakshay/cckit/extensions/owner"
 	"github.com/soodakshay/cckit/state"
@@ -21,8 +25,8 @@ func TestCars(t *testing.T) {
 var _ = Describe(`Cars`, func() {
 
 	//Create chaincode mock
-	cc := testcc.NewMockStub(`cars`, New())
-	ccWithoutAC := testcc.NewMockStub(`cars`, NewWithoutAccessControl())
+	cc := testcc.NewMockStub(`cars`, cars.New())
+	ccWithoutAC := testcc.NewMockStub(`cars`, cars.NewWithoutAccessControl())
 
 	// load actor certificates
 	actors, err := testcc.IdentitiesFromFiles(`SOME_MSP`, map[string]string{
@@ -41,52 +45,52 @@ var _ = Describe(`Cars`, func() {
 
 		It("Allow authority to add information about car", func() {
 			//invoke chaincode method from authority actor
-			expectcc.ResponseOk(cc.From(actors[`authority`]).Invoke(`carRegister`, Payloads[0]))
+			expectcc.ResponseOk(cc.From(actors[`authority`]).Invoke(`carRegister`, cars.Payloads[0]))
 		})
 
 		It("Disallow non authority to add information about car", func() {
 			//invoke chaincode method from non authority actor
 			expectcc.ResponseError(
-				cc.From(actors[`someone`]).Invoke(`carRegister`, Payloads[0]),
+				cc.From(actors[`someone`]).Invoke(`carRegister`, cars.Payloads[0]),
 				owner.ErrOwnerOnly) // expect "only owner" error
 		})
 
 		It("Allow non authority to add information about car to chaincode without access control", func() {
 			//invoke chaincode method from non authority actor
 			expectcc.ResponseOk(
-				ccWithoutAC.From(actors[`someone`]).Invoke(`carRegister`, Payloads[0]))
+				ccWithoutAC.From(actors[`someone`]).Invoke(`carRegister`, cars.Payloads[0]))
 		})
 
 		It("Disallow authority to add duplicate information about car", func() {
 			expectcc.ResponseError(
-				cc.From(actors[`authority`]).Invoke(`carRegister`, Payloads[0]),
+				cc.From(actors[`authority`]).Invoke(`carRegister`, cars.Payloads[0]),
 				state.ErrKeyAlreadyExists) //expect car id already exists
 		})
 
 		It("Allow everyone to retrieve car information", func() {
-			car := expectcc.PayloadIs(cc.Invoke(`carGet`, Payloads[0].Id),
-				&Car{}).(Car)
+			car := expectcc.PayloadIs(cc.Invoke(`carGet`, cars.Payloads[0].Id),
+				&cars.Car{}).(cars.Car)
 
-			Expect(car.Title).To(Equal(Payloads[0].Title))
-			Expect(car.Id).To(Equal(Payloads[0].Id))
+			Expect(car.Title).To(Equal(cars.Payloads[0].Title))
+			Expect(car.Id).To(Equal(cars.Payloads[0].Id))
 		})
 
 		It("Allow everyone to get car list", func() {
 			//  &[]Car{} - declares target type for unmarshalling from []byte received from chaincode
-			cars := expectcc.PayloadIs(cc.Invoke(`carList`), &[]Car{}).([]Car)
+			cc := expectcc.PayloadIs(cc.Invoke(`carList`), &[]cars.Car{}).([]cars.Car)
 
-			Expect(len(cars)).To(Equal(1))
-			Expect(cars[0].Id).To(Equal(Payloads[0].Id))
+			Expect(cc).To(HaveLen(1))
+			Expect(cc[0].Id).To(Equal(cars.Payloads[0].Id))
 		})
 
 		It("Allow authority to add more information about car", func() {
 			// register second car
-			expectcc.ResponseOk(cc.From(actors[`authority`]).Invoke(`carRegister`, Payloads[1]))
-			cars := expectcc.PayloadIs(
+			expectcc.ResponseOk(cc.From(actors[`authority`]).Invoke(`carRegister`, cars.Payloads[1]))
+			cc := expectcc.PayloadIs(
 				cc.From(actors[`authority`]).Invoke(`carList`),
-				&[]Car{}).([]Car)
+				&[]cars.Car{}).([]cars.Car)
 
-			Expect(len(cars)).To(Equal(2))
+			Expect(cc).To(HaveLen(2))
 		})
 	})
 })

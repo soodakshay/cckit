@@ -3,12 +3,19 @@ package param
 import (
 	"fmt"
 
+<<<<<<< HEAD
 	"github.com/hyperledger/fabric/protos/peer"
+=======
+	"github.com/pkg/errors"
+>>>>>>> d9270d9c7e0def8422d5975be671d71af6c232c9
 	"github.com/soodakshay/cckit/convert"
 	"github.com/soodakshay/cckit/router"
 )
 
 const LastPosKey = `_lastPos`
+
+// ErrPayloadValidationError occurs when payload validation not passed
+var ErrPayloadValidationError = errors.New(`payload validation`)
 
 type (
 	// Parameters list of chain code function parameters
@@ -46,7 +53,9 @@ func (p Parameter) ValueFromContext(c router.Context) (arg interface{}, err erro
 
 	args := c.GetArgs()[argsStartsFrom:] // first arg is chaincode function name
 	if argPos >= len(args) {
-		return nil, fmt.Errorf(`method "%s", param "%s" not exists, param expected at pos : %d, stub args length: %d`, c.Path(), p.Name, argPos, len(args))
+		return nil, fmt.Errorf(
+			`method "%s", param "%s" not exists, param expected at pos : %d, stub args length: %d`,
+			c.Path(), p.Name, argPos, len(args))
 	}
 
 	return convert.FromBytes(args[argPos], p.Type) //first arg is function name

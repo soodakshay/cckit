@@ -28,6 +28,7 @@ type (
 		Keys(instance interface{}) (key []state.KeyValue, err error)
 	}
 
+	// InstanceKeyer returns key of an state entry instance
 	InstanceKeyer func(instance interface{}) (key state.Key, err error)
 
 	StateMapped interface {
@@ -37,24 +38,21 @@ type (
 	}
 	// StateMapping defines metadata for mapping from schema to state keys/values
 	StateMapping struct {
-		schema       interface{}
-		namespace    state.Key
-		primaryKeyer InstanceKeyer
-		list         interface{}
-		uniqKeys     []*StateKeyDefinition
+		schema        interface{}
+		namespace     state.Key
+		isKeyerSchema bool //schema is keyer for another schema
+		primaryKeyer  InstanceKeyer
+		list          interface{}
+		uniqKeys      []*StateKeyDefinition
 	}
 
+	// StateKeyDefinition
 	StateKeyDefinition struct {
 		Name  string
 		Attrs []string
 	}
 
 	StateMappings map[string]*StateMapping
-
-	StateMappingOptions struct {
-		namespace    state.Key
-		primaryKeyer state.KeyTransformer
-	}
 
 	StateMappingOpt func(*StateMapping, StateMappings)
 )
@@ -80,21 +78,33 @@ func (smm StateMappings) Add(schema interface{}, opts ...StateMappingOpt) StateM
 func applyStateMappingDefaults(sm *StateMapping) {
 	// default namespace based on type name
 	if len(sm.namespace) == 0 {
-		sm.namespace = schemaNamespace(sm.schema)
+		sm.namespace = SchemaNamespace(sm.schema)
 	}
 }
 
-func schemaNamespace(schema interface{}) state.Key {
+func SchemaNamespace(schema interface{}) state.Key {
 	t := reflect.TypeOf(schema).String()
 	return state.Key{t[strings.Index(t, `.`)+1:]}
 }
 
+// Get mapper for mapped entry
 func (smm StateMappings) Get(entry interface{}) (StateMapper, error) {
 	m, ok := smm[mapKey(entry)]
 	if !ok {
 		return nil, fmt.Errorf(`%s: %s`, ErrStateMappingNotFound, mapKey(entry))
 	}
 	return m, nil
+}
+
+// Get mapper by string namespace. It can be used in block explorer: we know state key, but don't know
+// type actually mapped to state
+func (smm StateMappings) GetByNamespace(namespace state.Key) (StateMapper, error) {
+	for _, m := range smm {
+		if !m.isKeyerSchema && reflect.DeepEqual(m.namespace, namespace) {
+			return m, nil
+		}
+	}
+	return nil, fmt.Errorf(`%s: %s`, ErrStateMappingNotFound, namespace)
 }
 
 func (smm StateMappings) Exists(entry interface{}) bool {
@@ -122,6 +132,11 @@ func (smm StateMappings) Map(entry interface{}) (mapped StateMapped, err error) 
 	default:
 		return nil, ErrEntryTypeNotSupported
 	}
+}
+
+func (smm *StateMappings) IdxKey(entity interface{}, idx string, idxVal state.Key) (state.Key, error) {
+	keyMapped := NewKeyRefIDMapped(entity, idx, idxVal)
+	return keyMapped.Key()
 }
 
 func (sm *StateMapping) Namespace() state.Key {

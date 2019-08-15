@@ -1,13 +1,17 @@
 package testing
 
 import (
+	"container/list"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
-	"time"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	"github.com/hyperledger/fabric/protos/peer"
+	gologging "github.com/op/go-logging"
 	"github.com/pkg/errors"
 	"github.com/soodakshay/cckit/convert"
 )
@@ -17,8 +21,10 @@ const EventChannelBufferSize = 100
 var (
 	// ErrChaincodeNotExists occurs when attempting to invoke a nonexostent external chaincode
 	ErrChaincodeNotExists = errors.New(`chaincode not exists`)
-	// ErrUnknownFromArgsType  occurs when attempting to set unknown args in From func
+	// ErrUnknownFromArgsType occurs when attempting to set unknown args in From func
 	ErrUnknownFromArgsType = errors.New(`unknown args type to cckit.MockStub.From func`)
+	// ErrKeyAlreadyExistsInTransientMap occurs when attempting to set existing key in transient map
+	ErrKeyAlreadyExistsInTransientMap = errors.New(`key already exists in transient map`)
 )
 
 // MockStub replacement of shim.MockStub with creator mocking facilities
@@ -33,6 +39,7 @@ type MockStub struct {
 	creatorTransformer          CreatorTransformer          // transformer for tx creator data, used in From func
 	ChaincodeEvent              *peer.ChaincodeEvent        // event in last tx
 	chaincodeEventSubscriptions []chan *peer.ChaincodeEvent // multiple event subscriptions
+	PrivateKeys                 map[string]*list.List
 }
 
 type CreatorTransformer func(...interface{}) (mspID string, certPEM []byte, err error)
@@ -40,10 +47,12 @@ type CreatorTransformer func(...interface{}) (mspID string, certPEM []byte, err 
 // NewMockStub creates chaincode imitation
 func NewMockStub(name string, cc shim.Chaincode) *MockStub {
 	return &MockStub{
-		MockStub:                *shim.NewMockStub(name, cc),
-		cc:                      cc,
-		ClearCreatorAfterInvoke: true, // by default clear tx creator data after each cc method invoke
+		MockStub: *shim.NewMockStub(name, cc),
+		cc:       cc,
+		// by default tx creator data and transient map are cleared after each cc method query/invoke
+		ClearCreatorAfterInvoke: true,
 		InvokablesFull:          make(map[string]*MockStub),
+		PrivateKeys:             make(map[string]*list.List),
 	}
 }
 
@@ -64,7 +73,6 @@ func (stub *MockStub) SetEvent(name string, payload []byte) error {
 	}
 
 	stub.ChaincodeEvent = &peer.ChaincodeEvent{EventName: name, Payload: payload}
-
 	for _, sub := range stub.chaincodeEventSubscriptions {
 		sub <- stub.ChaincodeEvent
 	}
@@ -78,7 +86,7 @@ func (stub *MockStub) EventSubscription() chan *peer.ChaincodeEvent {
 	return subscription
 }
 
-// ClearEvents clears chaincode events channel -
+// ClearEvents clears chaincode events channel
 func (stub *MockStub) ClearEvents() {
 	for len(stub.ChaincodeEventsChannel) > 0 {
 		<-stub.ChaincodeEventsChannel
@@ -100,8 +108,8 @@ func (stub *MockStub) MockPeerChaincode(invokableChaincodeName string, otherStub
 	stub.InvokablesFull[invokableChaincodeName] = otherStub
 }
 
-// MockedPeerChancodes returns names of mocked chaincodes, available for invoke from current stub
-func (stub *MockStub) MockedPeerChancodes() []string {
+// MockedPeerChaincodes returns names of mocked chaincodes, available for invoke from current stub
+func (stub *MockStub) MockedPeerChaincodes() []string {
 	keys := make([]string, 0)
 	for k := range stub.InvokablesFull {
 		keys = append(keys, k)
@@ -119,8 +127,9 @@ func (stub *MockStub) InvokeChaincode(chaincodeName string, args [][]byte, chann
 
 	otherStub, exists := stub.InvokablesFull[chaincodeName]
 	if !exists {
-		return shim.Error(fmt.Sprintf(`%s: try to invoke chaincode "%s" in channel "%s" (%s). Available mocked chaincodes are: %s`,
-			ErrChaincodeNotExists, ccName, channel, chaincodeName, stub.MockedPeerChancodes()))
+		return shim.Error(fmt.Sprintf(
+			`%s: try to invoke chaincode "%s" in channel "%s" (%s). Available mocked chaincodes are: %s`,
+			ErrChaincodeNotExists, ccName, channel, chaincodeName, stub.MockedPeerChaincodes()))
 	}
 
 	res := otherStub.MockInvoke(stub.TxID, args)
@@ -152,8 +161,9 @@ func (stub *MockStub) MockCreator(mspID string, certPEM []byte) {
 
 func (stub *MockStub) generateTxUID() string {
 	id := make([]byte, 32)
-	rand.Seed(time.Now().UnixNano())
-	rand.Read(id)
+	if _, err := rand.Read(id); err != nil {
+		panic(err)
+	}
 	return fmt.Sprintf("0x%x", id)
 }
 
@@ -164,6 +174,11 @@ func (stub *MockStub) Init(iargs ...interface{}) peer.Response {
 		return shim.Error(err.Error())
 	}
 
+	return stub.MockInit(stub.generateTxUID(), args)
+}
+
+// InitBytes init func with ...[]byte args
+func (stub *MockStub) InitBytes(args ...[]byte) peer.Response {
 	return stub.MockInit(stub.generateTxUID(), args)
 }
 
@@ -223,6 +238,7 @@ func (stub *MockStub) InvokeBytes(args ...[]byte) peer.Response {
 	return stub.MockInvoke(stub.generateTxUID(), args)
 }
 
+// QueryBytes mock query with autogenerated tx uuid
 func (stub *MockStub) QueryBytes(args ...[]byte) peer.Response {
 	return stub.MockQuery(stub.generateTxUID(), args)
 }
@@ -260,8 +276,23 @@ func (stub *MockStub) GetTransient() (map[string][]byte, error) {
 	return stub.transient, nil
 }
 
+// WithTransient sets transient map
 func (stub *MockStub) WithTransient(transient map[string][]byte) *MockStub {
 	stub.transient = transient
+	return stub
+}
+
+// AddTransient adds key-value pairs to transient map
+func (stub *MockStub) AddTransient(transient map[string][]byte) *MockStub {
+	if stub.transient == nil {
+		stub.transient = make(map[string][]byte)
+	}
+	for k, v := range transient {
+		if _, ok := stub.transient[k]; ok {
+			panic(ErrKeyAlreadyExistsInTransientMap)
+		}
+		stub.transient[k] = v
+	}
 	return stub
 }
 
@@ -270,3 +301,204 @@ func (stub *MockStub) WithTransient(transient map[string][]byte) *MockStub {
 //	stub.TxTimestamp = txTimestamp
 //	return stub
 //}
+
+// DelPrivateData mocked
+func (stub *MockStub) DelPrivateData(collection string, key string) error {
+	m, in := stub.PvtState[collection]
+	if !in {
+		return errors.Errorf("Collection %s not found.", collection)
+	}
+
+	if _, ok := m[key]; !ok {
+		return errors.Errorf("Key %s not found.", key)
+	}
+	delete(m, key)
+
+	for elem := stub.PrivateKeys[collection].Front(); elem != nil; elem = elem.Next() {
+		if strings.Compare(key, elem.Value.(string)) == 0 {
+			stub.PrivateKeys[collection].Remove(elem)
+		}
+	}
+	return nil
+}
+
+type PrivateMockStateRangeQueryIterator struct {
+	Closed     bool
+	Stub       *MockStub
+	StartKey   string
+	EndKey     string
+	Current    *list.Element
+	Collection string
+}
+
+// Logger for the shim package.
+var mockLogger = gologging.MustGetLogger("mock")
+
+// HasNext returns true if the range query iterator contains additional keys
+// and values.
+func (iter *PrivateMockStateRangeQueryIterator) HasNext() bool {
+	if iter.Closed {
+		// previously called Close()
+		mockLogger.Debug("HasNext() but already closed")
+		return false
+	}
+
+	if iter.Current == nil {
+		mockLogger.Error("HasNext() couldn't get Current")
+		return false
+	}
+
+	current := iter.Current
+	for current != nil {
+		// if this is an open-ended query for all keys, return true
+		if iter.StartKey == "" && iter.EndKey == "" {
+			return true
+		}
+		comp1 := strings.Compare(current.Value.(string), iter.StartKey)
+		comp2 := strings.Compare(current.Value.(string), iter.EndKey)
+		if comp1 >= 0 {
+			if comp2 < 0 {
+				mockLogger.Debug("HasNext() got next")
+				return true
+			} else {
+				mockLogger.Debug("HasNext() but no next")
+				return false
+
+			}
+		}
+		current = current.Next()
+	}
+
+	// we've reached the end of the underlying values
+	mockLogger.Debug("HasNext() but no next")
+	return false
+}
+
+// Next returns the next key and value in the range query iterator.
+func (iter *PrivateMockStateRangeQueryIterator) Next() (*queryresult.KV, error) {
+	if iter.Closed {
+		err := errors.New("PrivateMockStateRangeQueryIterator.Next() called after Close()")
+		mockLogger.Errorf("%+v", err)
+		return nil, err
+	}
+
+	if !iter.HasNext() {
+		err := errors.New("PrivateMockStateRangeQueryIterator.Next() called when it does not HaveNext()")
+		mockLogger.Errorf("%+v", err)
+		return nil, err
+	}
+
+	for iter.Current != nil {
+		comp1 := strings.Compare(iter.Current.Value.(string), iter.StartKey)
+		comp2 := strings.Compare(iter.Current.Value.(string), iter.EndKey)
+		// compare to start and end keys. or, if this is an open-ended query for
+		// all keys, it should always return the key and value
+		if (comp1 >= 0 && comp2 < 0) || (iter.StartKey == "" && iter.EndKey == "") {
+			key := iter.Current.Value.(string)
+			value, err := iter.Stub.GetPrivateData(iter.Collection, key)
+			iter.Current = iter.Current.Next()
+			return &queryresult.KV{Key: key, Value: value}, err
+		}
+		iter.Current = iter.Current.Next()
+	}
+	err := errors.New("PrivateMockStateRangeQueryIterator.Next() went past end of range")
+	mockLogger.Errorf("%+v", err)
+	return nil, err
+}
+
+// Close closes the range query iterator. This should be called when done
+// reading from the iterator to free up resources.
+func (iter *PrivateMockStateRangeQueryIterator) Close() error {
+	if iter.Closed {
+		err := errors.New("PrivateMockStateRangeQueryIterator.Close() called after Close()")
+		mockLogger.Errorf("%+v", err)
+		return err
+	}
+
+	iter.Closed = true
+	return nil
+}
+
+func NewPrivateMockStateRangeQueryIterator(stub *MockStub, collection string, startKey string, endKey string) *PrivateMockStateRangeQueryIterator {
+	mockLogger.Debug("NewPrivateMockStateRangeQueryIterator(", stub, startKey, endKey, ")")
+	if _, ok := stub.PrivateKeys[collection]; !ok {
+		stub.PrivateKeys[collection] = list.New()
+	}
+	iter := new(PrivateMockStateRangeQueryIterator)
+	iter.Closed = false
+	iter.Stub = stub
+	iter.StartKey = startKey
+	iter.EndKey = endKey
+	iter.Current = stub.PrivateKeys[collection].Front()
+	iter.Collection = collection
+
+	iter.Print()
+
+	return iter
+}
+
+func (iter *PrivateMockStateRangeQueryIterator) Print() {
+	mockLogger.Debug("PrivateMockStateRangeQueryIterator {")
+	mockLogger.Debug("Closed?", iter.Closed)
+	mockLogger.Debug("Stub", iter.Stub)
+	mockLogger.Debug("StartKey", iter.StartKey)
+	mockLogger.Debug("EndKey", iter.EndKey)
+	mockLogger.Debug("Current", iter.Current)
+	mockLogger.Debug("HasNext?", iter.HasNext())
+	mockLogger.Debug("Collection", iter.Collection)
+	mockLogger.Debug("}")
+}
+
+// PutPrivateData mocked
+func (stub *MockStub) PutPrivateData(collection string, key string, value []byte) error {
+	if _, in := stub.PvtState[collection]; !in {
+		stub.PvtState[collection] = make(map[string][]byte)
+	}
+	stub.PvtState[collection][key] = value
+
+	if _, ok := stub.PrivateKeys[collection]; !ok {
+		stub.PrivateKeys[collection] = list.New()
+	}
+
+	for elem := stub.PrivateKeys[collection].Front(); elem != nil; elem = elem.Next() {
+		elemValue := elem.Value.(string)
+		comp := strings.Compare(key, elemValue)
+		mockLogger.Debug("MockStub", stub.Name, "Compared", key, elemValue, " and got ", comp)
+		if comp < 0 {
+			// key < elem, insert it before elem
+			stub.PrivateKeys[collection].InsertBefore(key, elem)
+			mockLogger.Debug("MockStub", stub.Name, "Key", key, " inserted before", elem.Value)
+			break
+		} else if comp == 0 {
+			// keys exists, no need to change
+			mockLogger.Debug("MockStub", stub.Name, "Key", key, "already in State")
+			break
+		} else { // comp > 0
+			// key > elem, keep looking unless this is the end of the list
+			if elem.Next() == nil {
+				stub.PrivateKeys[collection].PushBack(key)
+				mockLogger.Debug("MockStub", stub.Name, "Key", key, "appended")
+				break
+			}
+		}
+	}
+
+	// special case for empty Keys list
+	if stub.PrivateKeys[collection].Len() == 0 {
+		stub.PrivateKeys[collection].PushFront(key)
+		mockLogger.Debug("MockStub", stub.Name, "Key", key, "is first element in list")
+	}
+
+	return nil
+}
+
+const maxUnicodeRuneValue = utf8.MaxRune
+
+// GetPrivateDataByPartialCompositeKey mocked
+func (stub *MockStub) GetPrivateDataByPartialCompositeKey(collection, objectType string, attributes []string) (shim.StateQueryIteratorInterface, error) {
+	partialCompositeKey, err := stub.CreateCompositeKey(objectType, attributes)
+	if err != nil {
+		return nil, err
+	}
+	return NewPrivateMockStateRangeQueryIterator(stub, collection, partialCompositeKey, partialCompositeKey+string(maxUnicodeRuneValue)), nil
+}

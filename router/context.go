@@ -15,13 +15,20 @@ type (
 	// Context of chaincode invoke
 	Context interface {
 		Stub() shim.ChaincodeStubInterface
+
+		// Client returns invoker ClientIdentity
 		Client() (cid.ClientIdentity, error)
+
+		// Response returns response builder
 		Response() Response
 		Logger() *shim.ChaincodeLogger
 		Path() string
+		Handler() *HandlerMeta
+		SetHandler(*HandlerMeta)
 		State() state.State
 		UseState(state.State) state.State
 
+		// Time returns txTimesta
 		Time() (time.Time, error)
 
 		ReplaceArgs(args [][]byte) Context // replace args, for usage in preMiddleware
@@ -76,14 +83,14 @@ type (
 	}
 
 	context struct {
-		stub   shim.ChaincodeStubInterface
-		logger *shim.ChaincodeLogger
-		state  state.State
-		event  state.Event
-		path   string
-		args   [][]byte
-		params InterfaceMap
-		store  InterfaceMap
+		stub    shim.ChaincodeStubInterface
+		handler *HandlerMeta
+		logger  *shim.ChaincodeLogger
+		state   state.State
+		event   state.Event
+		args    [][]byte
+		params  InterfaceMap
+		store   InterfaceMap
 	}
 )
 
@@ -104,7 +111,18 @@ func (c *context) Logger() *shim.ChaincodeLogger {
 }
 
 func (c *context) Path() string {
+	if len(c.GetArgs()) == 0 {
+		return ``
+	}
 	return string(c.GetArgs()[0])
+}
+
+func (c *context) Handler() *HandlerMeta {
+	return c.handler
+}
+
+func (c *context) SetHandler(h *HandlerMeta) {
+	c.handler = h
 }
 
 func (c *context) State() state.State {

@@ -1,38 +1,45 @@
 package mapping
 
 import (
+<<<<<<< HEAD
+=======
+	"strings"
+
+>>>>>>> d9270d9c7e0def8422d5975be671d71af6c232c9
 	"github.com/soodakshay/cckit/state"
 	"github.com/soodakshay/cckit/state/schema"
 )
 
+// KeyRefNamespace namespace for uniq indexes
 const KeyRefNamespace = `_idx`
 
-var KeyRefIdKeyer = attrsPKeyer([]string{`Schema`, `Idx`, `RefKey`})
+// KeyRefIDKeyer keyer for KeyRef entity
+var KeyRefIDKeyer = attrsPKeyer([]string{`Schema`, `Idx`, `RefKey`})
 
 var KeyRefMapper = &StateMapping{
 	schema:       &schema.KeyRef{},
 	namespace:    state.Key{KeyRefNamespace},
-	primaryKeyer: KeyRefIdKeyer,
+	primaryKeyer: KeyRefIDKeyer,
 }
 
-var KeyRefIdMapper = &StateMapping{
+var KeyRefIDMapper = &StateMapping{
 	schema:       &schema.KeyRefId{},
 	namespace:    state.Key{KeyRefNamespace},
-	primaryKeyer: KeyRefIdKeyer,
+	primaryKeyer: KeyRefIDKeyer,
 }
 
 func NewKeyRef(target interface{}, idx string, refKey, pKey state.Key) *schema.KeyRef {
 	return &schema.KeyRef{
-		Schema: mapKey(target),
+		Schema: strings.Join(SchemaNamespace(target), `-`),
 		Idx:    idx,
 		RefKey: []string(refKey),
 		PKey:   []string(pKey),
 	}
 }
 
-func NewKeyRefId(target interface{}, idx string, refKey state.Key) *schema.KeyRefId {
+func NewKeyRefID(target interface{}, idx string, refKey state.Key) *schema.KeyRefId {
 	return &schema.KeyRefId{
-		Schema: mapKey(target),
+		Schema: strings.Join(SchemaNamespace(target), `-`),
 		Idx:    idx,
 		RefKey: []string(refKey),
 	}
@@ -42,6 +49,8 @@ func NewKeyRefMapped(target interface{}, idx string, refKey, pKey state.Key) *Pr
 	return NewProtoStateMapped(NewKeyRef(target, idx, refKey, pKey), KeyRefMapper)
 }
 
-func NewKeyRefIdMapped(target interface{}, idx string, refKey state.Key) *ProtoStateMapped {
-	return NewProtoStateMapped(NewKeyRefId(target, idx, refKey), KeyRefIdMapper)
+func NewKeyRefIDMapped(target interface{}, idx string, refKey state.Key) *ProtoStateMapped {
+	return NewProtoStateMapped(
+		NewKeyRefID(target, idx, refKey),
+		KeyRefIDMapper)
 }

@@ -3,6 +3,7 @@ package mapping
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/soodakshay/cckit/state"
@@ -12,6 +13,12 @@ import (
 func StateNamespace(namespace state.Key) StateMappingOpt {
 	return func(sm *StateMapping, smm StateMappings) {
 		sm.namespace = namespace
+	}
+}
+
+func IsKeyerSchema() StateMappingOpt {
+	return func(sm *StateMapping, smm StateMappings) {
+		sm.isKeyerSchema = true
 	}
 }
 
@@ -41,7 +48,7 @@ func PKeySchema(pkeySchema interface{}) StateMappingOpt {
 		sm.primaryKeyer = attrsPKeyer(attrs)
 
 		//add mapping namespace for id schema same as schema
-		smm.Add(pkeySchema, StateNamespace(schemaNamespace(sm.schema)), PKeyAttr(attrs...))
+		smm.Add(pkeySchema, StateNamespace(SchemaNamespace(sm.schema)), PKeyAttr(attrs...), IsKeyerSchema())
 	}
 }
 
@@ -51,14 +58,29 @@ func PKeyAttr(attrs ...string) StateMappingOpt {
 	}
 }
 
+// PKeyId use Id attr as source for mapped state entry key
 func PKeyId() StateMappingOpt {
 	return PKeyAttr(`Id`)
 }
 
+// PKeyConst use constant as state entry key
+func PKeyConst(key state.Key) StateMappingOpt {
+	return func(sm *StateMapping, smm StateMappings) {
+		sm.primaryKeyer = func(instance interface{}) (state.Key, error) {
+			return key, nil
+		}
+	}
+}
+
+// PKeyComplexId sets Id as key field, also adds mapping for pkeySchema
+// with namespace from mapping schema
 func PKeyComplexId(pkeySchema interface{}) StateMappingOpt {
 	return func(sm *StateMapping, smm StateMappings) {
 		sm.primaryKeyer = attrsPKeyer([]string{`Id`})
-		smm.Add(pkeySchema, StateNamespace(schemaNamespace(sm.schema)), PKeyAttr(attrsFrom(pkeySchema)...))
+		smm.Add(pkeySchema,
+			StateNamespace(SchemaNamespace(sm.schema)),
+			PKeyAttr(attrsFrom(pkeySchema)...),
+			IsKeyerSchema())
 	}
 }
 
@@ -72,13 +94,19 @@ func attrsFrom(schema interface{}) (attrs []string) {
 	// fields from schema
 	s := reflect.ValueOf(schema).Elem().Type()
 	for i := 0; i < s.NumField(); i++ {
-		attrs = append(attrs, s.Field(i).Name)
+
+		name := s.Field(i).Name
+		if strings.HasPrefix(name, `XXX_`) {
+			continue
+		}
+
+		attrs = append(attrs, name)
 	}
 	return
 }
 
 func attrsPKeyer(attrs []string) InstanceKeyer {
-	return func(instance interface{}) (state.Key, error) {
+	return func(instance interface{}) (key state.Key, err error) {
 		inst := reflect.Indirect(reflect.ValueOf(instance))
 		var pkey state.Key
 		for _, attr := range attrs {
@@ -87,11 +115,10 @@ func attrsPKeyer(attrs []string) InstanceKeyer {
 				return nil, fmt.Errorf(`%s: %s`, ErrFieldNotExists, attr)
 			}
 
-			if key, err := keyFromValue(v); err != nil {
+			if key, err = keyFromValue(v); err != nil {
 				return nil, fmt.Errorf(`key from field %s.%s: %s`, mapKey(instance), attr, err)
-			} else {
-				pkey = pkey.Append(key)
 			}
+			pkey = pkey.Append(key)
 		}
 		return pkey, nil
 	}
@@ -108,12 +135,13 @@ func keyFromValue(v reflect.Value) (key state.Key, err error) {
 		return key, nil
 	}
 
-	switch v.Kind() {
-	case reflect.Ptr:
+	if v.Kind() == reflect.Ptr {
 		s := reflect.ValueOf(v.Interface()).Elem().Type()
 		// get all field values from struct
 		for i := 0; i < s.NumField(); i++ {
-			key = append(key, reflect.Indirect(v).Field(i).String())
+			if !strings.HasPrefix(s.Field(i).Name, `XXX_`) {
+				key = append(key, reflect.Indirect(v).Field(i).String())
+			}
 		}
 		return key, nil
 	}

@@ -2,12 +2,12 @@
 package router
 
 import (
-	"os"
-
 	"fmt"
+	"os"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
+<<<<<<< HEAD
 	"github.com/pkg/errors"
 	"github.com/soodakshay/cckit/response"
 )
@@ -26,9 +26,14 @@ var (
 
 	// ErrHandlerError error in handler
 	ErrHandlerError = errors.New(`router handler error`)
+=======
+	"github.com/soodakshay/cckit/response"
+>>>>>>> d9270d9c7e0def8422d5975be671d71af6c232c9
 )
 
 type (
+	MethodType string
+
 	// InterfaceMap map of interfaces
 	InterfaceMap map[string]interface{}
 
@@ -39,34 +44,73 @@ type (
 	StubHandlerFunc func(shim.ChaincodeStubInterface) peer.Response
 
 	// HandlerFunc returns result as interface and error, this is converted to peer.Response via response.Create
+<<<<<<< HEAD
 	HandlerFunc func(Context) (interface{}, peer.Response)
+=======
+	HandlerFunc func(Context) peer.Response
+>>>>>>> d9270d9c7e0def8422d5975be671d71af6c232c9
 
 	// ContextMiddlewareFunc middleware for ContextHandlerFun
-	ContextMiddlewareFunc func(ContextHandlerFunc, ...int) ContextHandlerFunc
+	ContextMiddlewareFunc func(nextOrPrev ContextHandlerFunc, pos ...int) ContextHandlerFunc
 
 	// MiddlewareFunc middleware for HandlerFunc
 	MiddlewareFunc func(HandlerFunc, ...int) HandlerFunc
+
+	HandlerMeta struct {
+		Hdl  HandlerFunc
+		Type MethodType
+	}
 
 	// Group of chain code functions
 	Group struct {
 		logger *shim.ChaincodeLogger
 		prefix string
 
+		// mapping chaincode method  => handler
 		stubHandlers    map[string]StubHandlerFunc
 		contextHandlers map[string]ContextHandlerFunc
-		handlers        map[string]HandlerFunc
+		handlers        map[string]*HandlerMeta
 
 		contextMiddleware []ContextMiddlewareFunc
 		middleware        []MiddlewareFunc
-		preMiddleware     []ContextMiddlewareFunc
+
+		preMiddleware   []ContextMiddlewareFunc
+		afterMiddleware []MiddlewareFunc
+	}
+
+	Router interface {
+		HandleInit(shim.ChaincodeStubInterface)
+		Handle(shim.ChaincodeStubInterface)
+		Query(path string, handler HandlerFunc, middleware ...MiddlewareFunc) Router
+		Invoke(path string, handler HandlerFunc, middleware ...MiddlewareFunc) Router
 	}
 )
 
+const (
+	InitFunc                = `init`
+	MethodInvoke MethodType = `invoke`
+	MethodQuery  MethodType = `query`
+)
+
+func (g *Group) buildHandler() ContextHandlerFunc {
+	return func(c Context) peer.Response {
+		h := g.handleContext
+		// build pre part
+		for i := len(g.preMiddleware) - 1; i >= 0; i-- {
+			h = g.preMiddleware[i](h, i)
+		}
+
+		return h(c)
+	}
+}
+
 // HandleInit handle chaincode init method
 func (g *Group) HandleInit(stub shim.ChaincodeStubInterface) peer.Response {
-	return g.HandleContext(g.Context(stub).ReplaceArgs(
-		// add "init" as first arg
-		append([][]byte{[]byte(InitFunc)}, stub.GetArgs()...)))
+	// Pre context handling middleware
+	h := g.buildHandler()
+
+	// add "init" as first arg
+	return h(g.Context(stub).ReplaceArgs(append([][]byte{[]byte(InitFunc)}, stub.GetArgs()...)))
 }
 
 // Handle used for using in CC Invoke function
@@ -77,18 +121,11 @@ func (g *Group) Handle(stub shim.ChaincodeStubInterface) peer.Response {
 		return response.Error(ErrEmptyArgs)
 	}
 
-	// Pre context handling middleware
-	h := func(c Context) peer.Response {
-		h := g.HandleContext
-		for i := len(g.preMiddleware) - 1; i >= 0; i-- {
-			h = g.preMiddleware[i](h, i)
-		}
-		return h(c)
-	}
+	h := g.buildHandler()
 	return h(g.Context(stub))
 }
 
-func (g *Group) HandleContext(c Context) peer.Response {
+func (g *Group) handleContext(c Context) peer.Response {
 
 	// handle standard stub handler (accepts StubInterface, returns peer.Response)
 	if stubHandler, ok := g.stubHandlers[c.Path()]; ok {
@@ -106,16 +143,24 @@ func (g *Group) HandleContext(c Context) peer.Response {
 			return h(c)
 		}
 		return h(c)
-	} else if handler, ok := g.handlers[c.Path()]; ok {
+	} else if handlerMeta, ok := g.handlers[c.Path()]; ok {
+
 		g.logger.Debug(`router handler: `, c.Path())
-		h := func(c Context) (interface{}, error) {
-			h := handler
+		h := func(c Context) peer.Response {
+
+			c.SetHandler(handlerMeta)
+			h := handlerMeta.Hdl
 			for i := len(g.middleware) - 1; i >= 0; i-- {
 				h = g.middleware[i](h, i)
 			}
+
+			for i := 0; i <= len(g.afterMiddleware)-1; i++ {
+				h = g.afterMiddleware[i](h, 0)
+			}
+
 			return h(c)
 		}
-		resp := response.Create(h(c))
+		resp := h(c)
 		if resp.Status != shim.OK {
 			g.logger.Errorf(`%s: %s: %s`, ErrHandlerError, c.Path(), resp.Message)
 		}
@@ -129,6 +174,11 @@ func (g *Group) HandleContext(c Context) peer.Response {
 
 func (g *Group) Pre(middleware ...ContextMiddlewareFunc) *Group {
 	g.preMiddleware = append(g.preMiddleware, middleware...)
+	return g
+}
+
+func (g *Group) After(middleware ...MiddlewareFunc) *Group {
+	g.afterMiddleware = append(g.afterMiddleware, middleware...)
 	return g
 }
 
@@ -163,46 +213,64 @@ func (g *Group) ContextHandler(path string, fn ContextHandlerFunc) *Group {
 	return g
 }
 
-// Query alias for invoke
+// Query defines handler and middleware for querying chaincode method (no state change, no send to orderer)
 func (g *Group) Query(path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Group {
-	return g.Invoke(path, handler, middleware...)
+	return g.addHandler(MethodQuery, path, handler, middleware...)
 }
 
-// Invoke configure handler and middleware functions for chain code function name
+// Invoke defines handler and middleware for invoke chaincode method  (state change,  need to send to orderer)
 func (g *Group) Invoke(path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Group {
-	g.handlers[g.prefix+path] = func(context Context) (interface{}, error) {
-		h := handler
-		for i := len(middleware) - 1; i >= 0; i-- {
-			h = middleware[i](h, i)
-		}
-		return h(context)
-	}
+	return g.addHandler(MethodInvoke, path, handler, middleware...)
+}
+
+func (g *Group) addHandler(t MethodType, path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Group {
+	g.handlers[g.prefix+path] = &HandlerMeta{
+		Type: t,
+		Hdl: func(context Context) peer.Response {
+			h := handler
+			for i := len(middleware) - 1; i >= 0; i-- {
+				h = middleware[i](h, i)
+			}
+			return h(context)
+		}}
 	return g
 }
 
 func (g *Group) Init(handler HandlerFunc, middleware ...MiddlewareFunc) *Group {
-	return g.Invoke(`init`, handler, middleware...)
+	return g.Invoke(InitFunc, handler, middleware...)
 }
 
 // Context returns chain code invoke context  for provided path and stub
 func (g *Group) Context(stub shim.ChaincodeStubInterface) Context {
-	return &context{stub: stub, logger: g.logger}
+	return NewContext(stub, g.logger)
 }
 
 // New group of chain code functions
 func New(name string) *Group {
+	g := new(Group)
+	g.logger = NewLogger(name)
+	g.stubHandlers = make(map[string]StubHandlerFunc)
+	g.contextHandlers = make(map[string]ContextHandlerFunc)
+	g.handlers = make(map[string]*HandlerMeta)
 
+	return g
+}
+
+// NewContext creates new instance of router.Context
+func NewContext(stub shim.ChaincodeStubInterface, logger *shim.ChaincodeLogger) *context {
+	return &context{
+		stub:   stub,
+		logger: logger,
+	}
+}
+
+// NewLogger creates new instance of shim.ChaincodeLogger
+func NewLogger(name string) *shim.ChaincodeLogger {
 	logger := shim.NewLogger(name)
 	loggingLevel, err := shim.LogLevel(os.Getenv(`CORE_CHAINCODE_LOGGING_LEVEL`))
 	if err == nil {
 		logger.SetLevel(loggingLevel)
 	}
 
-	g := new(Group)
-	g.logger = logger
-	g.stubHandlers = make(map[string]StubHandlerFunc)
-	g.contextHandlers = make(map[string]ContextHandlerFunc)
-	g.handlers = make(map[string]HandlerFunc)
-
-	return g
+	return logger
 }

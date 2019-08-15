@@ -5,22 +5,34 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/entities"
 	"github.com/pkg/errors"
 	"github.com/soodakshay/cckit/convert"
+<<<<<<< HEAD
+=======
+	"github.com/soodakshay/cckit/router"
+>>>>>>> d9270d9c7e0def8422d5975be671d71af6c232c9
 )
 
 const TransientMapKey = `ENCODE_KEY`
 
 func init() {
-	factory.InitFactories(nil)
+	if err := factory.InitFactories(nil); err != nil {
+		panic(err)
+	}
 }
 
-// EncryptArgs encrypt args
+// EncryptArgs convert args to [][]byte and encrypt args with key
 func EncryptArgs(key []byte, args ...interface{}) ([][]byte, error) {
 	argBytes, err := convert.ArgsToBytes(args...)
 	if err != nil {
 		return nil, err
 	}
-	eargs := make([][]byte, len(args))
-	for i, bb := range argBytes {
+
+	return EncryptArgsBytes(key, argBytes)
+}
+
+// EncryptArgsBytes encrypt args with key
+func EncryptArgsBytes(key []byte, argsBytes [][]byte) ([][]byte, error) {
+	eargs := make([][]byte, len(argsBytes))
+	for i, bb := range argsBytes {
 		encrypted, err := Encrypt(key, bb)
 		if err != nil {
 			return nil, errors.Wrap(err, `encryption error`)
@@ -35,6 +47,13 @@ func EncryptArgs(key []byte, args ...interface{}) ([][]byte, error) {
 func DecryptArgs(key []byte, args [][]byte) ([][]byte, error) {
 	dargs := make([][]byte, len(args))
 	for i, a := range args {
+
+		// do not try to decrypt init function
+		if i == 0 && string(a) == router.InitFunc {
+			dargs[i] = a
+			continue
+		}
+
 		decrypted, err := Decrypt(key, a)
 		if err != nil {
 			return nil, errors.Wrap(err, `decryption error`)
